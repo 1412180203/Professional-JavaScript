@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>chapter02</title>
+	<link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+	<h1>第2章 在 HTML 中使用 JavaScript</h1>
+	<h2>2.1 &lt;script&gt;元素</h2>
+	<p>
+		HTM 4.01 为&lt;script&gt;定义了下列 6 个属性。
+	</p>
+	<dl>
+		<dt>async</dt>
+		<dd>
+			可选。表示应该立即下载脚本，但不应妨碍页面中的其他操作，比如下载其他资源或等待加载其他脚本。只对外部脚本文件有效。
+		</dd>
+		<dt>charset</dt>
+		<dd>
+			可选。表示通过 src 属性指定的代码的字符集。由于大多数浏览器会忽略它的值，因此这个属性很少有人用。
+		</dd>
+		<dt>defer</dt>
+		<dd>
+			可选。表示脚本可以延迟到文档完全被解析和显示之后再执行。只对外部脚本文件有效。IE7 及更早版本对嵌入脚本也支持这个属性。
+		</dd>
+		<dt>language</dt>
+		<dd>
+			已废弃。原来用于表示编写代码使用的脚本语言(如 JavaScript、JavaScriptl.2 或 VBScript)。大多数浏览器会忽略这个属性，因此也没有必在再用了。
+		</dd>
+		<dt>src</dt>
+		<dd>
+			可选。表示包含要执行代码的外部文件。
+		</dd>
+		<dt>type</dt>
+		<dd>
+			可选。可以看成是 language 的替代属性;表示编写代码使用的脚本语言的内容类型（也称为MIME类型）。虽然 text/ javascript 和 text /ecmascript 都已经不被推荐使用，但人们一直以来使用的都还是 text/javascript。实际上，服务器在传送 JavaScript 文件时使用的 MIME 类型通常是 application/x-javascript，但在 type 中设置这个值却可能导致脚本被忽略。另外，在非 IE 浏览器中还可以使用以下值: application/javascript 和 application/ecmascript。考虑到约定俗成和最大限度的浏览器兼容性，目前 type 属性的值依旧还是 text/javascript。不过，这个属性并不是必需的，如果没有指定这个属性，则其默认值仍为 text/javascript 。
+		</dd>
+	</dl>
+	<p>
+		在使用 &lt;script&gt; 嵌入 JavaScript 代码时，记住不要在代码中的任何地方出现 "&lt;/script&gt;" 字符串。因为按照解析嵌入式代码的规则，当浏览器遇到字符串 "&lt/script&gt;" 时，就会认为那是结束的 &lt;/script&gt; 标签。而通过把这个字符串分隔为两部分可以解决这个问题，例如:
+	</p>
+	<code>
+		&lt;script type="text/javascript"&gt;<br />
+		&nbsp;&emsp;&emsp;function sayScript() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;alert("&lt;\/script&gt;");<br />
+		&nbsp;&emsp;&emsp;}<br />
+		&lt;/script&gt;
+	</code>
+	<h3>1. 延迟脚本</h3>
+	<p>
+		HTML4.01 为 &lt;script&gt; 标签定义了 defer 属性。这个属性的用途是表明脚本在执行时不会影响页面的构造。也就是说，脚本会被延迟到整个页面都解析完毕后再运行。因此，在 &lt;script&gt; 元素中设置 defer 属性，相当于告诉浏览器立即下载，但延迟执行。
+	</p>
+	<p>
+		HTML5 规范要求脚本按照它们出现的先后顺序执行，并且脚本会先于 DOMContentLoaded 事件执行。在现实当中，延迟脚本并不一定会按照顺序执行，也不一定会在 DOMContentLoaded 事件触发前执行，因此最好只包含一个延迟脚本。
+	</p>
+	<p>
+		IE4、Firefox 3.5、Safari 5 和 Chrome 是最早支持 defer 属性的浏览器。其他浏览器会忽略这个属性，像平常一样处理脚本。为此，把延迟脚本放在页面底部仍然是最佳选择。<br />
+		在 XHTML 文挡中，要把 defer 属性设置为 defer="defer"。<br />
+		使用 defer 属性可以让脚本在文档完全呈现之后再执行。延迟脚本总是按照指定它们的顺序执行。
+	</p>
+	<h3>2. 异步脚本</h3>
+	<p>
+		async 只适用于外部脚本文件，并告诉浏览器立即下载文件。但与 defer 不同的是，标记为 async 的脚本并不保证按照指定它们的先后顺序执行。因此，确保两者之间互不依赖非常重要。指定 async 属性的目的是不让页面等待两个脚本下载和执行，从而异步加载页面其他内容。为此，建议异步脚本不要在加载期间修改 DOM。异步脚本一定会在页面的 load 事件前执行，但可能会在 DOMContentLoaded 事件触发之前或之后执行。支持异步脚本的浏览器有 Firefox 3.6、Safari 5 和 Chrome。<br />
+		使用 async 属性可以表示当前脚本不必等待其他脚本，也不必阻塞文档呈现。不能保证异步脚本按照它们在页面中出现的顺序执行。
+	</p>
+	<h2>2.2 &lt;noscript&gt; 元素</h2>
+	<p>
+		早期浏览器都面临一个特殊的问题，即当浏览器不支持 JavaScript 时如何让页面平稳地退化。对这个问题的最终解决方案就是创造一个 &lt;noscript&gt; 元素，用以在不支持 JavaScript 的浏览器中显示替代的内容。这个元素可以包含能够出现在文档 &lt;body&gt; 中的任何 HTML 元素 ——&lt;script&gt; 元素除外。包含在 &lt;noscript&gt; 元素中的内容只有在下列情况下才会显示出来:<br />
+		(1) 浏览器不支持脚本。<br />
+		(2) 浏览器支持脚本，但脚本被禁用。<br />
+		符合上述任何一个条件，浏览器都会显示 &lt;noscript&gt; 中的内容。而在除此之外的其他情况下，浏览器不会呈现 &lt;noscript&gt; 中的内容。
+	</p>
+</body>
+</html>
