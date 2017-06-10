@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>chapter07</title>
+	<link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+	<h1>第7章 函数表达式</h1>
+	<p>
+		定义函数的方式有两种：<br />
+		一种是函数声明。
+	</p>
+	<code>
+		function functionName(arg0, arg1, arg2) {<br />
+		&nbsp;&emsp;&emsp;//函数体<br />
+		}
+	</code>
+	<p>
+		关于函数声明，它的一个重要特征就是函数声明提升，意思是在执行代码之前会先读取函数声明。这就意味着可以把函数声明放在调用它的语句后面。
+	</p>
+	<p>
+		第二种创建函数的方式是使用函数表达式。函数表达式有几种不同的语法形式。下面是最常见的一种形式。
+	</p>
+	<code>
+		var functionName = function(arg0, arg1, arg2) {<br />
+		&nbsp;&emsp;&emsp;//函数体<br />
+		}
+	</code>
+	<p>
+		函数表达式与其他表达式一样，在使用前必须先赋值。
+	</p>
+	<h2>7.1 递归</h2>
+	<p>
+		<strong>arguments.callee</strong> 是一个指向正在执行的函数的指针，因此可以用它来实现对函数的递归调用。
+	</p>
+	<code>
+		function factorial(num) {<br />
+		&nbsp;&emsp;&emsp;if (num <= 1) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return 1;<br />
+		&nbsp;&emsp;&emsp;} else {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return num * arguments.callee(num -1);<br />
+		&nbsp;&emsp;&emsp;}<br />
+		}
+	</code>
+	<p>
+		在严格模式下，不能通过脚本访问 arguments.callee，访问这个属性会导致错误。不过，可以使用命名函数表达式来达成相同的结果。
+	</p>
+	<code>
+		var factorial = (function f(num) {<br />
+		&nbsp;&emsp;&emsp;if (num <= 1) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return 1;<br />
+		&nbsp;&emsp;&emsp;} else {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return num * f(num - 1);<br />
+		&nbsp;&emsp;&emsp;}<br />
+		});
+	</code>
+	<h2>7.2 闭包</h2>
+	<p>
+		闭包是指有权访问另一个函数作用域中的变量的函数。创建闭包的常见方式，就是在一个函数内部创建另一个函数。
+	</p>
+	<code>
+		function createComparisonFunction(propertyName) {<br />
+		<br />
+		&nbsp;&emsp;&emsp;return function(object1, object2) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;var value1 = object1[propertyName];<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;var value2 = object2[propertyName];<br />
+		<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;if (value1 < value2) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return -1;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;} else if (value1 > value2) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return 1;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;} else {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return 0;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;}<br />
+		&nbsp;&emsp;&emsp;};<br />
+		}<br />
+		<br />
+		var compare = createComparisonFunction("name");<br />
+		var result = compare({name: "Nicholas"}, {name: "Greg"});
+	</code>
+	<p>
+		当某个函数被调用时，会创建一个执行环境（execution context）及相应的作用域链。然后，使用 arguments 和其他命名参数的值来初始化函数的活动对象（activation object）。但在作用域链中，外部函数的活动对象始终处于第二位，外部函数的外部函数的活动对象处于第三位，... 直至作为作用域链终点的全局执行环境。
+	</p>
+	<p>
+		后台的每个执行环境都有一个表示变量的对象——变量对象。全局环境的变量对象始终存在，而局部环境的变量对象，则只在函数执行的过程中存在。<br />
+		作用域链本质上是一个指向变量对象的指针列表，它只引用但不实际包含变量对象。<br />
+		无论什么时候在函数中访问一个变量时，就会从作用域链中搜索具有相应名字的变量。一般来讲，当函数执行完毕后，局部活动对象就会被销毁，内存中仅保存全局作用域（全局执行环境的变量对象）。但是，闭包的情况又有所不同。
+	</p>
+	<p>
+		在另一个函数内部定义的函数会将包含函数（即外部函数）的活动对象添加到它的作用域链中。<br />
+		在匿名函数从 createComparisonFunction() 中被返回后，它的作用域链被初始化为包含 createComparisonFunction() 函数的活动对象和全局变量对象。这样，匿名函数就可以访问在 createComparisonFunction() 中定义的所有变量。<br />
+		当 createComparisonFunction() 函数返回后，其执行环境的作用域链会被销毁，但它的活动对象仍然会留在内存中，直到匿名函数被销毁后（比如：compare = null; //解除对匿名函数的引用，以便释放内存），createComparisonFunction() 的活动对象才会被销毁。
+	</p>
+	<img src="img/p7-1.png" alt="闭包" />
+	<p>
+		由于闭包会携带包含它的函数的作用域，因此会比其他函数占用更多的内存。过度使用闭包可能会导致内存占用过多，要慎重使用闭包。
+	</p>
+	<h3>1. 闭包与变量</h3>
+	<p>
+		闭包只能取得包含函数中任何变量的最后一个值。闭包所保存的是整个变量对象，而不是某个特殊的变量。
+	</p>
+	<code>
+		function createFunctions() {<br />
+		&nbsp;&emsp;&emsp;var result = new Array();<br />
+		<br />
+		&nbsp;&emsp;&emsp;for(var i = 0; i < 10; i ++) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;result[i] = function() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return i;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;};<br />
+		&nbsp;&emsp;&emsp;}<br />
+		<br />
+		&nbsp;&emsp;&emsp;return result;<br />
+		}<br />
+	</code>
+	<p>
+		这个函数会返回一个函数数组。表面上看，似乎每个函数都应该返自己的索引值。但实际上，每个函数都返回10。因为每个函数的作用域链中都保存着 createFunctions() 函数的活动对象，所以它们引用的都是同一个变量 i。<br />
+		但是，我们可以通过创建另一个匿名函数强制让闭包的行为符合预期。
+	</p>
+	<code>
+		function createFunctions() {<br />
+		&nbsp;&emsp;&emsp;var result = new Array();<br />
+		<br />
+		&nbsp;&emsp;&emsp;for(var i = 0; i < 10; i ++) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;result[i] = function(num) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return function() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return num;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;};<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;}(i);<br />
+		&nbsp;&emsp;&emsp;}<br />
+		<br />
+		&nbsp;&emsp;&emsp;return result;<br />
+		}
+	</code>
+	<p>
+		由于函数参数是按值传递的，所以就会将变量 i 的当前值复制给参数 num。而在这个匿名函数内部，又创建并返回了一个访问 num 的闭包。这样一来，result 数组中的每个函数都有自己 num 变量的一个副本，因此就可以返回各自不同的数值了。
+	</p>
+	<h3>2. 关于 this 对象</h3>
+	<p>
+		this 对象是在运行时基于函数的执行环境绑定的：在全局函数中，this 等于 window，而当函数被作为某个对象的方法调用时，this 等于那个对象。不过，匿名函数的执行环境具有全局性，因此其 this 对象通常指向 window。当然，在通过 call() 或 apply() 改变函数执行环境的情况下，this 就会指向其他对象。
+	</p>
+	<code>
+		var name = "The Window";<br />
+		<br />
+		var object = {<br />
+		&nbsp;&emsp;&emsp;name: "My Object",<br />
+		&nbsp;&emsp;&emsp;getName: function() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return function() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return this.name;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;};<br />
+		&nbsp;&emsp;&emsp;}<br />
+		};<br />
+		<br />
+		alert(object.getName()()); //"The Window"
+	</code><br /><br />
+	<code>
+		var name = "The Window";<br />
+		<br />
+		var object = {<br />
+		&nbsp;&emsp;&emsp;name: "My Object",<br />
+		&nbsp;&emsp;&emsp;getName: function() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;var that = this;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return function() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return that.name;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;};<br />
+		&nbsp;&emsp;&emsp;}<br />
+		};<br />
+		<br />
+		alert(object.getName()()); //"My Object"
+	</code>
+	<p>
+		同样，如果想访问作用域中的 arguments 对象，必须将对该对象的引用保存到另一个闭包能够访问的变量中。
+	</p>
+	<h3>3. 内存泄漏</h3>
+	<p>
+		闭包在 IE9 之前会导致一些特殊的问题，如果闭包的作用域链中保存着一个 HTML 元素，那么就意味着该元素将无法被销毁。
+	</p>
+	<h2>7.3 模仿块级作用域</h2>
+	<p>
+		JavaScript 没有块级作用域的概念。<br />
+		JavaScript 从来不会告诉你是否多次声明了同一个变量；遇到这种情况，它只会对后续的声明视而不见（不过，它会执行后续声明中的变量初始化）。 匿名函数可以用来模仿块级作用域并避免这个问题。
+	</p>
+	<code>
+		(function() {<br />
+		&nbsp;&emsp;&emsp;//这里是块级作用域<br />
+		})();
+	</code>
+	<p>
+		以上代码定义并立即调用了一个匿名函数。
+	</p>
+	<p>
+		这种技术经常在全局作用域中被用在函数外部，从而限制向全局作用域中添加过多的变量和函数。一般来说，我们都应该尽量少向全局作用域中添加变量和函数。 
+	</p>
+	<p>
+		这种做法可以减少闭包占用的内存问题，因为没有指向匿名函数的引用。只要函数执行完毕，就可以立即销毁其作用域链了。
+	</p>
+	<h2>7.4 私有变量</h2>
+	<p>
+		严格来讲，JavaScript 中没有私有成员的概念；所有对象属性都是公有的。不过，倒是有一个私有变量的概念。任何在函数中定义的变量，都可以认为是私有变量，因为不能在函数的外部访问这些变量私有变量包括函数的参数、局部变量和在函数内部定义的其他函数。
+	</p>
+	<p>
+		如果在这个函数内部创建一个闭包，那么闭包通过自己的作用域链也可以访问这些变量。而利用这一点，就可以创建用于访问私有变量的公有方法。
+	</p>
+	<p>
+		我们把有权访问私有变量和私有函数的公有方法称为特权方法。有两种在对象上创建特权方法的方式。第一种是在构造函数中定义特权方法。
+	</p>
+	<code>
+		function MyObject() {<br />
+		&nbsp;&emsp;&emsp;//私有变量和私有函数<br />
+		&nbsp;&emsp;&emsp;var privateVariable = 10;<br />
+		&nbsp;&emsp;&emsp;function privateFunction() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return false;<br />
+		&nbsp;&emsp;&emsp;}<br />
+		&nbsp;&emsp;&emsp;//特权方法<br />
+		&nbsp;&emsp;&emsp;this.publicMethod = function() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;privateVariable ++;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return privateFunction();<br />
+		&nbsp;&emsp;&emsp;};<br />
+		}
+	</code>
+	<p>
+		能够在构造函数中定义特权方法，是因为特权方法作为闭包有权访问在构造函数中定义的所有变量和函数。 
+	</p>
+	<p>
+		在构造函数中定义特权方法也有一个缺点，那就是你必须使用构造函数模式来达到这个目的。构造函数模式的缺点是针对每个实例都会创建同样一组新方法，而使用静态私有变量来实现特权方法就可以避免这个问题。
+	</p>
+	<h3>1. 静态私有变量</h3>
+	<p>
+		通过在私有作用域中定义私有变量或函数，同样也可以创建特权方法。
+	</p>
+	<code>
+		(function() {<br />
+		&nbsp;&emsp;&emsp;//私有变量和私有函数<br />
+		&nbsp;&emsp;&emsp;var privateVariable = 10;<br />
+		&nbsp;&emsp;&emsp;function privateFunction() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return false;<br />
+		&nbsp;&emsp;&emsp;}<br />
+		&nbsp;&emsp;&emsp;//构造函数<br />
+		&nbsp;&emsp;&emsp;MyObject = function() {<br />
+		&nbsp;&emsp;&emsp;};<br />
+		&nbsp;&emsp;&emsp;//公有/特权方法<br />
+		&nbsp;&emsp;&emsp;MyObject.prototype.publicMethod = function() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;privateVariable ++;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return privateFunction();<br />
+		&nbsp;&emsp;&emsp;};<br />
+		})();
+	</code>
+	<p>
+		这个模式在定义构造函数时并没有使用函数声明，而是使用了函数表达式。函数声明只能创建局部函数。我们没有在声明 MyObject 时使用 var 关键字。初始化未经声明的变量，总是会创建一个全局变量。因此 MyObject 就成了一个全局变量，能够在私有作用域之外被访问到。
+	</p>
+	<p>
+		这个模式与在构造函数中定义特权方法的主要区别，就在于私有变量和函数是由实例共享的。由于特权方法是在原型上定义的，因此所有实例都使用同一个函数。而这个特权方法，作为一个闭包，总是保存着对包含作用域的引用。
+	</p>
+	<p>
+		以这种方式创建静态私有变量会因为使用原型而增进代码复用，但每个实例都没有自己的私有变量。到底是使用实例变量，还是静态私有变量，最终还是要视你的具体需求而定。
+	</p>
+	<p>
+		多查找作用域链中的一个层次，就会在一定程度上影响查找速度。而这正是使用闭包和私有变量的一个明显不足之处。
+	</p>
+	<h3>2. 模块模式</h3>
+	<p>
+		前面的模式是用于为自定义类型创建私有变量和特权方法的。而道格拉斯所说的模块模式（module pattern）则是为单例创建私有变量和特权方法。所谓单例（singleton），指的就是只有一个实例的对象。JavaScript 是以对象字面量的方式来创建单例对象的。
+	</p>
+	<p>
+		模块模式通过为单例添加私有变量和特权方法能够使其得到增强。
+	</p>
+	<code>
+		var singleton = function() {<br />
+		&nbsp;&emsp;&emsp;//私有变量和私有函数<br />
+		&nbsp;&emsp;&emsp;var privateVariable = 10;<br />
+		&nbsp;&emsp;&emsp;function privateFunction() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return false;<br />
+		&nbsp;&emsp;&emsp;}<br />
+		&nbsp;&emsp;&emsp;//特权/公有方法和属性<br />
+		&nbsp;&emsp;&emsp;return {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;publicProperty: true,<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;publicMethod: function() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;privateVariable ++;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return privateFunction();<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;}<br />
+		&nbsp;&emsp;&emsp;};<br />
+		}();
+	</code>
+	<p>
+		从本质上来讲，这个对象字面量定义的是单例的公共接口。这种模式在需要对单例进行某些初始化，同时又需要维护其私有变量时是非常有用的。
+	</p>
+	<h3>3. 增强的模块模式</h3>
+	<p>
+		有人进一步改进了模块模式，即在返回对象之前加入对其增强的代码。这种增强的模块模式适合那些单例必须是某种类型的实例，同时还必须添加某些属性和（或）方法对其加以增强的情况。 
+	</p>
+	<code>
+		var singleton = function() {<br />
+		&nbsp;&emsp;&emsp;//私有变量和私有函数<br />
+		&nbsp;&emsp;&emsp;var privateVariable = 10;<br />
+		&nbsp;&emsp;&emsp;function privateFunction() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return false;<br />
+		&nbsp;&emsp;&emsp;}<br />
+		&nbsp;&emsp;&emsp;//创建对象<br />
+		&nbsp;&emsp;&emsp;var object = new CustomType(); //指定某种类型的实例<br />
+		&nbsp;&emsp;&emsp;//添加特权/公有属性和方法<br />
+		&nbsp;&emsp;&emsp;object.publicProperty = true;<br />
+		&nbsp;&emsp;&emsp;object.publicMethod = function() {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;privateVariable ++;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;return privateFunction();<br />
+		&nbsp;&emsp;&emsp;};<br />
+		&nbsp;&emsp;&emsp;//返回这个对象<br />
+		&nbsp;&emsp;&emsp;return object;<br />
+		}();
+	</code>
+	<h2>小结</h2>
+	<p>
+		当在函数内部定义了其他函数时，就创建了闭包。闭包有权访问包含函数内部的所有变量，原理如下。
+	</p>
+	<ul>
+		<li>在后台执行环境中，闭包的作用域链包含着它自己的作用域、包含函数的作用域和全局作用域。</li>
+		<li>通常，函数的作用域及其所有变量都会在函数执行结束后被销毁。</li>
+		<li>但是，当函数返回了一个闭包时，这个函数的作用域将会一直在内存中保存到闭包不存在为止。</li>
+	</ul>
+</body>
+</html>
