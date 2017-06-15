@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>chapter09</title>
+	<link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+	<h1>第9章 客户端检测</h1>
+	<p>
+		建议先设计最通用的方案，然后再使用特定于浏览器的技术增强该方案。不到万不得已，就不要使用客户端检测。 
+	</p>
+	<h2>9.1 能力检测</h2>
+	<p>
+		能力检测（又称特性检测）的目标不是识别特定的浏览器，而是识别浏览器的能力。采用这种方式不必顾及特定的浏览器如何如何，只要确定浏览器支持特定的能力，就可以给出解决方案。
+	</p>
+	<code>
+		if (object.propertyInQuestion) {<br />
+		&nbsp;&emsp;&emsp;//使用 object.propertyInQuestion<br />
+		}
+	</code>
+	<p>
+		先检测最常用的特性，这样可以保证代码最优化，因为在多数情况下都可以避免测试多个条件。
+		必须测试实际要用到的特性。一个特性存在，不一定意味着另一个特性也存在。
+	</p>
+	<h3>1. 更可靠的能力检测</h3>
+	<p>
+		能力检测对于想知道某个特性是否会按照适当方式行事（而不仅仅是某个特性存在）非常有用。在可能的情况下，要尽量使用 typeof 进行能力检测。 
+	</p>
+	<p>
+		在浏览器环境下测试任何对象的某个特性是否存在，可以使用下面这个函数。
+	</p>
+	<code>
+		function isHostMethod(object, property) {<br />
+		&emsp;var t = typeof object[property];<br />
+		&emsp;return t == 'function' || (!! (t == 'object' && object[property])) || t == 'unknown';<br />
+		}
+	</code>
+	<h3>2. 能力检测，不是浏览器检测</h3>
+	<p>
+		检测某个或某几个特性并不能够确定浏览器。<br />
+		实际上，根据浏览然不同将能力组合起来是更可取的方式。如果你知道自己的应用程序需要使用某些特定的浏览器特性，那么最好是一次性检测所有相关特性，而不要分别检测。 
+	</p>
+	<p>
+		在实际开发中，应该将能力检测作为确定下一步解决方案的依据，而不是用它来判断用户使用的是什么浏览器。
+	</p>
+	<h2>9.2 怪癖检测</h2>
+	<p>
+		怪癖检测的目标是识别浏览器的特殊行为。与能力检测确认浏览器支持什么能力不同，怪癖检测是想要知道浏览器存在什么缺陷（“怪癖”也就是 bug）。<br />
+		由于检测“怪癖”涉及运行代码，因此我们建议仅检测那些对你有直接影响的“怪癖”，而且最好在脚本一开始就执行此类检测，以便尽早解决问题。
+	</p>
+	<h2>9.3 用户代理检测</h2>
+	<p>
+		用户代理检测通过检测用户代理字符串来确定实际使用的浏览器。在每一次 HTTP 请求过程中，用户代理字符串是作为响应首部发送的，而且该字符串可以通过 JavaScript 的 <strong>navigator.userAgent</strong> 属性访问。在服务器端，通过检测用户代理字符串来确定用户使用的浏览器是一种常用而且广为接受的做法。而在客户端，用户代理检测一般被当作一种万不得已才用的做法，其优先级排在能力检测和（或）怪癖检测之后。
+	</p>
+	<h3>1. 识别呈现引擎</h3>
+	<p>
+		如前所述，确切知道浏览器的名字和版本号不如确切知道它使用的是什么呈现引擎。因此，我们要编写的脚本将主要检测五大呈现引擎：IE 、Gecko、WebKit、KHTML 和 Opera。
+	</p>
+	<p>
+		为了不在全局作用域中添加多余的变量，我们将使用模块增强模式来封装检测脚本。检测脚本的基本代码结构如下所示：
+	</p>
+	<code>
+		var client = function() {<br />
+		<br />
+		&nbsp;&emsp;&emsp;var engine = {<br />
+		<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;//呈现引擎<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;ie: 0,<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;gecko: 0,<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;webkit: 0,<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;khtml: 0,<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;opera: 0,<br />
+		<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;//具体的版本号<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;ver: null<br />
+		&nbsp;&emsp;&emsp;};<br />
+		<br />
+		&nbsp;&emsp;&emsp;return {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;engine: engine<br />
+		&nbsp;&emsp;&emsp;};<br />
+		}();
+	</code>
+	<p>
+		要正确地识别呈现引擎，关键是检测顺序要正确。由于用户代理字符串存在诸多不一致的地方，如果检测顺序不对，很可能会导致检测结果不正确。为此，第一步就是识另 Opera，因为它的用户代理字符串有可能完全模仿其他浏览器。而其用户代理字符串都不会将自己标识为 Opera。
+	</p>
+	<p>
+		要识别 Opera，必须得检测 <strong>window.opera</strong> 对象。Opera 5 及更高版本中都有这个对象，用以保存与浏览器相关的标识信息以及与浏览器直接交互。在 Opera 7.6 及更高版本中，调用 <strong>version()</strong> 方法可以返回一个表示浏览器版本的字符串，而这也是确定Opera版本号的最佳方式。
+	</p>
+	<code>
+		var ua = navigator.userAgent;<br />
+		<br />
+		if (window.opera) {<br />
+		&nbsp;&emsp;&emsp;engine.ver = window.opera.version();<br />
+		&nbsp;&emsp;&emsp;engine.opera = parseFloat(engine.ver);<br />
+		}
+	</code>
+	<p>
+		应该放在第二位检测的呈现引擎是 WebKit。因为 WebKit 的用户代理字符串中包含 "Gecko" 和 "KHTML" 这两个子字符串，所以如果首先检测它们，很可能会得出错误的结论。<br />
+		不过，WebKit 的用户代理字符串中的 "AppleWebKit" 是独一无二的，因此检测这个字符串最合适。
+	</p>
+	<code>
+		else if (/AppleWebKit\/(\S+)/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;engine.ver = RegExp["$1"];<br />
+		&nbsp;&emsp;&emsp;engine.webkit = parseFloat(engine.ver);<br />
+		}
+	</code>
+	<p>
+		接下来要测试的呈现引擎是 KHTML。同样，KHTML 的用户代理字符串中也包含 "Gecko" ，因此在排除 KHTML 之前，我们无法准确检测基于 Gecko 的浏览器。KHTML 的版本号与 WebKit 的版本号在用户代理字符串中的格式差不多，因此可以使用类似的正则表达式。此外，由于 Konqueror 3.1 及更早版本中不包含 KHTML 的版本，故而就要使用 Konqueror 的版本来代替。 
+	</p>
+	<code>
+		else if (/KHTML\/(\S+)/.test(ua) || /Konqueror\/([^;]+)/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;engine.ver = RegExp["$1"];<br />
+		&nbsp;&emsp;&emsp;engine.khtml = parseFloat(engine.ver);<br />
+		}
+	</code>
+	<p>
+		在排除了 WebKit 和 KHTML 之后，就可以准确地检测 Gecko 了。但是，在用户代理字符串中，Gecko 的版本号不会出现在字符串 "Gecko" 的后面，而是会出现在字符串 "rv:" 的后面。 
+	</p>
+	<code>
+		else if (/rv:([^\)]+)\) Gecko\/\d{8}/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;engine.ver = RegExp["$1"];<br />
+		&nbsp;&emsp;&emsp;engine.gecko = parseFloat(engine.ver);<br />
+		}
+	</code>
+	<p>
+		最后一个要检测的呈现引擎就是 IE 了。IE 的版本号位于字符串 "MSIE" 的后面、一个分号的前面，因此相应的正则表达式非常简单。
+	</p>
+	<code>
+		else if (/MSIE ([^;]+)/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;engine.ver = RegExp["$1"];<br />
+		&nbsp;&emsp;&emsp;engine.ie = parseFloat(engine.ver);<br />
+		}
+	</code>
+	<h3>2. 识别浏览器</h3>
+	<p>
+		大多数情况下，识别了浏览器的呈现引擎就足以为我们采取正确的操作提供依据了。可是，只有呈现引擎还不能说明存在所需的 JavaScript 功能。因此，有必要像下面这样为 client 对象再添加一些新的属性。
+	</p>
+	<code>
+		var browser = {<br />
+		<br />
+		&nbsp;&emsp;&emsp;//浏览器<br />
+		&nbsp;&emsp;&emsp;ie: 0,<br />
+		&nbsp;&emsp;&emsp;firefox: 0,<br />
+		&nbsp;&emsp;&emsp;safari: 0,<br />
+		&nbsp;&emsp;&emsp;konq: 0,<br />
+		&nbsp;&emsp;&emsp;opera: 0,<br />
+		&nbsp;&emsp;&emsp;chrome: 0,<br />
+		<br />
+		&nbsp;&emsp;&emsp;//具体的版本<br />
+		&nbsp;&emsp;&emsp;ver: null<br />
+		};<br />
+		<br />
+		return {<br />
+		&nbsp;&emsp;&emsp;engine: engine,<br />
+		&nbsp;&emsp;&emsp;browser: browser<br />
+		};
+	</code>
+	<p>
+		由于大多数浏览器与其呈现引擎密切相关，所以下面示例中检测浏览器的代码与检测呈现引擎的代码是混合在一起的。
+	</p>
+	<code>
+		var ua = navigator.userAgent;<br />
+		if (window.opera) {<br />
+		&nbsp;&emsp;&emsp;engine.ver = browser.ver = window.opera.version();<br />
+		&nbsp;&emsp;&emsp;engine.opera = browser.opera =  parseFloat(engine.ver);<br />
+		} else if (/AppleWebKit\/(\S+)/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;engine.ver = RegExp["$1"];<br />
+		&nbsp;&emsp;&emsp;engine.webkit = parseFloat(engine.ver);<br />
+		<br />
+		&nbsp;&emsp;&emsp;//确定是 chrome 还是 Safari<br />
+		&nbsp;&emsp;&emsp;if (/Chrome\/(\S+)/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;browser.ver = RegExp["$1"];<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;browser.chrome = parseFloat(browser.ver);<br />
+		&nbsp;&emsp;&emsp;} else if (/Version\/(\S+)/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;browser.ver = RegExp["$1"];<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;browser.safari = parseFloat(browser.ver);<br />
+		&nbsp;&emsp;&emsp;} else {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;//近似地确定版本号<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;var safariVersion = 1;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;if (engine.webkit < 100) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;safariVersion = 1;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;} else if (engine.webkit < 312) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;safariVersion = 1.2;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;} else if (engine.webkit < 412) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;safariVersion = 1.3;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;} else {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;safariVersion = 2;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;}<br />
+		<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;browser.safari = browser.ver = safariVersion;<br />
+		&nbsp;&emsp;&emsp;}<br />
+		} else if (/KHTML\/(\S+)/.test(ua) || /Konqueror\/([^;]+)/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;engine.ver = browser.ver = RegExp["$1"];<br />
+		&nbsp;&emsp;&emsp;engine.khtml = browser.konq = parseFloat(engine.ver);<br />
+		} else if (/rv:([^\)]+)\) Gecko\/\d{8}/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;engine.ver = RegExp["$1"];<br />
+		&nbsp;&emsp;&emsp;engine.gecko = parseFloat(engine.ver);<br />
+		<br />
+		&nbsp;&emsp;&emsp;//确定是不是 firefox<br />
+		&nbsp;&emsp;&emsp;if (/Firefox\/(\S+)/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;browser.ver = RegExp["$1"];<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;browser.firefox = parseFloat(browser.ver);<br />
+		&nbsp;&emsp;&emsp;}<br />
+		} else if (/MSIE ([^;]+)/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;engine.ver = browser.ver =  RegExp["$1"];<br />
+		&nbsp;&emsp;&emsp;engine.ie = browser.ie =  parseFloat(engine.ver);<br />
+		}
+	</code>
+	<h3>3. 识别平台</h3>
+	<p>
+		具有各种平台版本的浏览器（如 Safari、Firefox 和 Opera）在不同的平台下可能会有不同的问题。目前的三大主流平台是 Windows、Mac 和 Unix（包括各种 Linux）。为了检测这些平台，还需要像下面这样再添加一个新对象。
+	</p>
+	<code>
+		var system = {<br />
+		&nbsp;&emsp;&emsp;win: false,<br />
+		&nbsp;&emsp;&emsp;mac: false,<br />
+		&nbsp;&emsp;&emsp;x11: false<br />
+		};<br />
+		<br />
+		return {<br />
+		&nbsp;&emsp;&emsp;engine: engine,<br />
+		&nbsp;&emsp;&emsp;browser: browser,<br />
+		&nbsp;&emsp;&emsp;system: system<br />
+		};
+	</code>
+	<p>
+		在确定平台时，检测 <strong>navigator.platform</strong> 要比检测用户代理字符串更简单，后者在不同浏览器中会给出不同的平台信息。而 navigator.platform 属性可能的值包括 "Win32"、"Win64"、"MacPPC"、"MacIntel"、"X11" 和 "Linux i686"，这些值在不同的浏览器中都是一致的。
+	</p>
+	<code>
+		var p = navigator.platform;<br />
+		system.win = p.indexOf("Win") == 0;<br />
+		system.mac = p.indexOf("Mac") == 0;<br />
+		system.x11 = (p.indexOf("X11") == 0) || (p.indexOf("Linux") == 0);
+	</code>
+	<h3>4. 识别 Windows 操作系统</h3>
+	<p>
+		在 Windows 平台下，还可以从用户代理字符串中进一步取得具体的操作系统信息。在 Windows XP 之前，Windows 有两种版本，分别针对家庭用户和商业用户。针对家庭用户的版本分别是 Windows 95、98 和 Windows ME。而针对商业用户的版本则一直叫做 Window NT，最后由于市场原因改名为 Windows 2000。这两个产品线后来又合并成一个由 Windows NT 发展而来的公共的代码基，代表产品就是 Windows XP。随后，微软在 Windows XP 基础上又构建了 Windows Vista。只有了解这些信息，才能搞清楚用户代理字符串中 Windows 操作系统的具体版本。
+	</p>
+	<code>
+		if (system.win) {<br />
+		&nbsp;&emsp;&emsp;if (/Win(?:dows )?([^do]{2})\s?(\d+\.\d+)?/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;if (RegExp["$1"] == "NT") {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;switch(RegExp["$2"]) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;case "5.0":<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;system.win = "2000";<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;break;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;case "5.1":<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;system.win = "XP";<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;break;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;case "6.0":<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;system.win = "Vista";<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;break;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;case "6.1":<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;system.win = "7";<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;break;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;default:<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;system.win = "NT";<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;break;<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;}<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;} else if (RegExp["$1"] == "9x") {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;system.win = "ME";<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;} else {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;system.win = RegExp["$1"];<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;}<br />
+		&nbsp;&emsp;&emsp;}<br />
+		}
+	</code>
+	<h3>5. 识别移动设备</h3>
+	<p>首先，为要检测的所有移动设备添加属性</p>
+	<code>
+		var system = {<br />
+		&nbsp;&emsp;&emsp;win: false,<br />
+		&nbsp;&emsp;&emsp;mac: false,<br />
+		&nbsp;&emsp;&emsp;x11: false,<br />
+		<br />
+		&nbsp;&emsp;&emsp;//移动设备<br />
+		&nbsp;&emsp;&emsp;iphone: false,<br />
+		&nbsp;&emsp;&emsp;ipod: false,<br />
+		&nbsp;&emsp;&emsp;ipad: false,<br />
+		&nbsp;&emsp;&emsp;ios: false,<br />
+		&nbsp;&emsp;&emsp;android: false,<br />
+		&nbsp;&emsp;&emsp;nokiaN: false,<br />
+		&nbsp;&emsp;&emsp;winMobile: false<br />
+		};
+	</code>
+	<p>
+		然后，通常简单地检测字符串 "iPhone"、"iPod" 和 "iPad"，就可以分别设置相应属性的值了。
+	</p>
+	<code>
+		system.iphone = ua.indexOf("iPhone") > -1;<br />
+		system.ipod = ua.indexOf("iPod") > -1;<br />
+		system.iPad = ua.indexOf("iPad") > -1;
+	</code>
+	<p>
+		除了知道 iOS 设备，最好还能知道 iOS 的版本号。在 iOS 3 之前，用户代理字符串中只包含 "CPU like Mac OS"，后来 iPhone 中又改成 "CPU iPhone OS 3_0 like Mac OS X"，iPad 中又改成 "CPU OS 3_2 like Mac OS X"。也就是说，检测 iOS 需要正则表达式反映这些变化。
+	</p>
+	<code>
+		//检测 iOS 版本<br />
+		if (system.mac && ua.indexOf("Mobile") > -1) {<br />
+		&nbsp;&emsp;&emsp;if (/CPU (?:iPhone )?OS (\d+_\d+)/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;system.ios = parseFloat(RegExp.$1.replace("_", "."));<br />
+		&nbsp;&emsp;&emsp;} else {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;system.ios = 2; //不能真正检测出来，所以只能猜测<br />
+		&nbsp;&emsp;&emsp;}<br />
+		}
+	</code>
+	<p>
+		检测 Android 操作系统也很简单，也就是搜索字符串 "Android" 并取得紧随其后的版本号。
+	</p>
+	<code>
+		//检测 Android 版本<br />
+		if (/Android (\d+\.\d+)/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;system.android = parseFloat(RegExp.$1);<br />
+		}
+	</code>
+	<p>
+		诺基亚 N 系列手机使用的也是 WebKit，其用户代理字符串与其他基于 WebKit 的手机很相似，只要像下面检测一下用户代理字符串中是否存在 "NokiaN"，就足以确定是不是该系列的手机了。
+	</p>
+	<code>
+		system.nokiaN = ua.indexOf("NokiaN") > -1;
+	</code>
+	<p>
+		最后一种主要的移动设备平台是 Windows Mobile（也称为 Windows CE），用于 Pocket PC 和 Smartphone 中。 
+	</p>
+	<code>
+		//windows mobile<br />
+		if (system.win == "CE") {<br />
+		&nbsp;&emsp;&emsp;system.winMobile = system.win;<br />
+		} else if (system.win == "Ph") {<br />
+		&nbsp;&emsp;&emsp;if (/Windows Phone OS (\d+.\d+)/.test(ua)) {<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;system.win = "Phone";<br />
+		&nbsp;&emsp;&emsp;&nbsp;&emsp;&emsp;system.winMobile = parseFloat(RegExp["$1"]);<br />
+		&nbsp;&emsp;&emsp;}<br />
+		}
+	</code>
+	<h3>6. 识别游戏系统</h3>
+	<p>
+		首先，在 client.system 中添加适当的属性。
+	</p>
+	<code>
+		var system = {<br />
+		&nbsp;&emsp;&emsp;//...<br />
+		&nbsp;&emsp;&emsp;//游戏系统<br />
+		&nbsp;&emsp;&emsp;wii: false,<br />
+		&nbsp;&emsp;&emsp;ps: false<br />
+		};
+	</code>
+	<p>
+		检测游戏系统：
+	</p>
+	<code>
+		system.wii = ua.indexOf("Wii") > -1;<br />
+		system.ps = /playstation/i.test(ua);
+	</code>
+	<h3>7. 使用方法</h3>
+	<p>
+		我们在前面已经强调过了，用户代理检测是客户端检测的最后一个选择。只要可能，都应该优先采用能力检测和怪癖检测。用户代理检测一般适用于下列情形。
+	</p>
+	<ul>
+		<li>
+			不能直接准确地使用能力检测或怪癖检测。例如，某些浏览器实现了为将来功能预留的存根函数。在这种情况下，仅测试相应的函数是否存在还得不到足够的信息。
+		</li>
+		<li>
+			同一款浏览器在不同平台下具备不同的能力。这时候，可能就有必要确定浏览器位于哪个平台下。
+		</li>
+		<li>
+			为了跟踪分析等目的需要知道确切的浏览器。
+		</li>
+	</ul>
+
+	<h2>小结</h2>
+	<a href="js/client.js">完整的代码</a>
+</body>
+</html>
