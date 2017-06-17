@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>chapter11</title>
+	<link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+	<h1>第11章 DOM 扩展</h1>
+	<h2>11.1 选择符 API</h2>
+	<p>
+		Selectors API Level 1 的核心是两个方法：<strong>querySelector()</strong> 和 <strong>querySelectorAll()</strong>。在兼容的浏览器中，可以通过 Document 及 Element 类型的实例调用它们。
+	</p>
+	<h3>1. querySelector() 方法</h3>
+	<p>
+		querySelector() 方法接收一个 CSS 选择符，返回与该模式匹配的第一个元素，如果没有找到匹配的元素，返回 null。
+	</p>
+	<p>
+		通过 Document 类型调用 querySelector() 方法时，会在文档元素的范围内查找匹配的元素。而通过 Element 类型调用 querySelector() 方法时，只会在该元素后代元素的范围内查找匹配的元素。
+	</p>
+	<h3>2. querySelectorAll() 方法</h3>
+	<p>
+		querySelectorAll() 方法接收的参数与 querySelector() 方法一样，都是一个 CSS 选择符，但返回的是所有匹配的元素而不仅仅是一个元素。这个方法返回的是一个 NodeList 的实例。
+	</p>
+	<p>
+		只要传给 querySelectorAll() 方法的 CSS 选择符有效，该方法都会返回一个 NodeList 对象，而不管找到多少匹配的元素。如果没有找到匹配的元素，NodeList 就是空的。
+	</p>
+	<p>
+		要取得返回的 NodeList 中的每一个元素，可以使用 item() 方法，也可以使用方括号语法。
+	</p>
+	<h3>3. matchesSelector() 方法</h3>
+	<p>
+		Selectors API Level 2 规范为 Element 类型新增了一个方法 <strong>matchesSelector()</strong>。这个方法接收一个参数，即 CSS 选择符，如果调用元素与该选择符匹配，返回 true；否则，返回 false。
+	</p>
+	<p>
+		在取得某个元素引用的情况下，使用这个方法能够方便地检测它是否会被 querySelector() 或 querySelectorAll() 方法返回。 
+	</p>
+	<h2>11.2 元素遍历</h2>
+	<p>
+		对于元素间的空格，IE9 及之前版本不会返回文本节点，而其他所有浏览器都会返回文本节点。这样，就导致了在使用 childNodes 和 firstChild 等属性时的行为不一致。为了弥补这一差异，而同时又保持 DOM 规范不变，Element Traversal 规范（www.w3.org/TR/ElementTraversal/）新定义了一组属性。<br />
+		Element Traversal API 为 DOM 元素添加了以下5个属性：
+	</p>
+	<ul>
+		<li><strong>childElementCount</strong>：返回子元素（不包括文本节点和注释）的个数。</li>
+		<li><strong>firstElementChild</strong>：指向第一个子元素；firstChild 的元素版。</li>
+		<li><strong>lastElementChild</strong>：指向最后一个子元素；lastChild 的元素版。</li>
+		<li><strong>previousElementSibling</strong>：指向前一个同辈元素；previousSibling 的元素版。</li>
+		<li><strong>nextElementSibling</strong>：指向后一个同辈元素；nextSibling 的元素版。</li>
+	</ul>
+	<h2>11.3 HTML5</h2>
+	<h3>1. 与类相关的扩充</h3>
+	<h4>(1) getElementsByClassName() 方法</h4>
+	<p>
+		可以通过 document 对象及所有 HTML 元素调用方法 <strong>getElementsByClassName()</strong>，这个方法接受一个参数，即一个包含一或多个类名的字符串，返回带有指定类的所有元素的 NodeList。传入多个类名时，类名的先后顺序不重要，中间用空格隔开。
+	</p>
+	<p>
+		调用这个方法时，只有位于调用元素子树中的元素才会返回。在 document 对象上调用 getElementsByClassName() 始终会返回与类名匹配的所有元素，在元素上调用该方法就只会返回后代元素中匹配的元素。 
+	</p>
+	<p>
+		使用这个方法可以更方便地为带有某些类的元素添加事件处理程序，从而不必再局限于使用 ID 或标签名。不过别忘了，因为返回的对象是 NodeList，所以使用这个方法与使用 getElementsByTagName() 以及其他返回 NodeList 的 DOM 方法都具有同样的性能问题。
+	</p>
+	<h4>(2) classList 属性</h4>
+	<p>
+		在操作类名时，需要通过 className 属性添加、删除和替换类名。因为 className 中是一个字符串，所以即使只修改字符串一部分，也必须每次都设置整个字符串的值。
+	</p>
+	<p>
+		HTML5 新增了一种操作类名的方式，可以让操作更简单也更安全，那就是为所有元素添加 <strong>classList</strong> 属性。这个 classList 属性是新集合类型 DOMTokenList 的实例。与其他 DOM 集合类似，DOMTokenList 有一个表示自己包含多少元素的 length 属性，而要取得每个元素可以使用 item() 方法，也可以使用方括号语法。此外，这个新类型还定义如下方法。
+	</p>
+	<ul>
+		<li>add(<var>value</var>)：将给定的字符串值添加到列表中。如果值已经存在，就不添加了。</li>
+		<li>contains(<var>value</var>)：表示列表中是否存在给定的值，如果存在则返回 true，否则返回 false。</li>
+		<li>remove(<var>value</var>)：从列表中删除给定的字符串。</li>
+		<li>toggle(<var>value</var>)：如果列表中已经存在给定的值，删除它；如果列表中没有给定的值，添加它。</li>
+	</ul>
+	<h3>2. 焦点管理</h3>
+	<p>
+		HTML5 也添加了辅助管理 DOM 焦点的功能。首先就是 <strong>document.activeElement</strong> 属性，这个属性始终会引用 DOM 中当前获得了焦点的元素。元素获得焦点的方式有页面加载、用户输入（通常是通过按 Tab键）和在代码中调用 focus() 方法。
+	</p>
+	<p>
+		默认情况下，文挡刚刚加载完成时，document.activeElement 中保存的是 document.body 元素的引用。文档加载期间，document.activeElement 的值为 null。
+	</p>
+	<p>
+		另外就是新增了 <strong>document.hasFocus()</strong> 方法，这个方法用于确定文档是否获得了焦点。通过检测文档是否获得了焦点，可以知道用户是不是正在与页面交互。
+	</p>
+	<h3>3. HTMLDocument 的变化</h3>
+	<h4>(1) readyState 属性</h4>
+	<p>
+		 Document 的 <strong>readyState</strong> 属性有两个可能的值：
+	</p>
+	<ul>
+		<li>loading，正在加载文档；</li>
+		<li>complete，已经加载完文档。</li>
+	</ul>
+	<p>
+		使用 document.readyState 的最恰当方式，就是通过它来实现一个指示文档已经加载完成的指示器。
+	</p>
+	<code>
+		if (document.readyState == "complete") {<br />
+		&nbsp;&emsp;&emsp;//执行操作<br />
+		}
+	</code>
+	<h4>(2) 兼容模式</h4>
+	<p>
+		通过 document 的 <strong>compatMode</strong> 属性，可以知道浏览器采用了哪种渲染模式。在标准模式下，document.compatMode 的值等于 "CSS1Compat"，而在混杂模式下，document.compatMode 的值等于 "BackCompat"。 
+	</p>
+	<h4>(3) head 属性</h4>
+	<p>
+		 HTML5 新增了 <strong>document.head</strong> 属性。要引用文档的 &lt;head&gt; 元素，可以结合使用这个属性和另一种后备方法。
+	</p>
+	<code class="inlineCode">
+		var head = document.head || document.getElementsByTagName("head")[0];
+	</code>
+	<h3>4. 字符集属性</h3>
+	<p>
+		HTML5 新增了几个与文档字符集有关的属性。其中，<strong>charset</strong> 属性表示文档中实际使用的字符集，也可以用来指定新字符集。默认情况下，这个属性的值为 "UTF-16"，但可以通过 &lt;meta&gt; 元素、响应头部或直接设置 charset 属性修改这个值。
+	</p>
+	<p>
+		另一个属性是 <strong>defaultCharset</strong>，表示根据默认浏览器及操作系统的设置，当前文挡默认的字符集应该是什么。如果文挡没有使用默认的字符集，那 charset 和 defaultCharset 属性的值可能会不一样。支持 document.defaultCharset 属性的浏览器有 IE、Safari 和 Chrome。
+	</p>
+	<h3>5. 自定义数据属性</h3>
+	<p>
+		HTML5 规定可以为元素添加非标准的属性，但要添加前缀 <strong>data-</strong> ，目的是为元素提供与渲染无关的信息，或者提供语义信息。这些属性可以任意添加、随便命名，只要以 data- 开头即可。
+	</p>
+	<p>
+		添加了自定义属性之后，可以通过元素的 <strong>dataset</strong> 属性采访问自定义属性的值。dataset 属性的值是 DOMStringMap 的一个实例，也就是一个名值对儿的映射。在这个映射中，每个 data-name 形式的属性都会有一个对应的属性，只不过属性名没有 data- 前缀。
+	</p>
+	<h3>6. 插入标记</h3>
+	<h4>(1) innerHTML 属性</h4>
+	<p>
+		在读模式下，<strong>innerHTML</strong> 属性返回与调用元素的所有子节点（包括元素、注释和文本节点）对应的 HTML 标记。在写模式下，innerHTML 会根据指定的值创建新的 DOM 树，然后用这个 DOM 树完全替换调用元素原先的所有子节点。
+	</p>
+	<p>
+		使用 innerHTML 属性也有一些限制。比如，在大多数浏览器中，通过 innerHTML 插入 &lt;script&gt; 元素并不会执行其中的脚本。<br />
+		大多数浏览器都支持以直观的方式通过 innerHTML 插入 &lt;style&gt; 元素。
+	</p>
+	<p>
+		并不是所有元素都支持 innerHTML 属性。不支持 innerHTML 的元素有：&lt;col&gt;、&lt;colgroup&gt;、&lt;frameset&gt;、&lt;head&gt;、&lt;html&gt;、&lt;style&gt;、&lt;table&gt;、&lt;tbody&gt;、&lt;thead&gt;、&lt;tfoot&gt; 和 &lt;tr&gt;。 
+	</p>
+	<h4>(2) outerHTML 属性</h4>
+	<p>
+		在读模式下 <strong>outerHTML</strong> 返回调用它的元素及所有子节点的 HTML 标签。在写模式下，outerHTML 会根据指定的 HTML 字符串创建新的 DOM 子树，然后用这个 DOM 子树完全替换调用元素。
+	</p>
+	<h4>(3) insertAdjacentHTML() 方法</h4>
+	<p>
+		插入标记的最后一个新增方式是 <strong>insertAdjacentHTML()</strong> 方法。它接收两个参数：插入位置和要插入的 HTML 文本。第一个参数必须是下列值之一：
+	</p>
+	<ul>
+		<li>"beforebegin"，在当前元素之前插入一个紧邻的同辈元素；</li>
+		<li>"afterbegin"，在当前元素之下插入一个新的子元素或在第一个子元素之前再插入新的子元素；</li>
+		<li>"beforeend"，在当前元素之下插入一个新的子元素或在最后一个子元素之后再插入新的子元素；</li>
+		<li>"afterend"，在当前元素之后插入一个紧邻的同辈元素。</li>
+	</ul>
+	<p>
+		注意，这些值都必须是小写形式。第二个参数是一个 HTML 字符串（与 innerHTML 和 outerHTML 的值相同），如果浏览器无法解析该字符串，就会抛出错误。
+	</p>
+	<h4>(4) 内存与性能问题</h4>
+	<p>
+		使用本节介绍的方法替换子节点可能会导致浏览器的内存占用问题，假设某个元素有一个事件处理程序（或者引用了一个 JavaScript 对象作为属性），在使用前述某个属性将该元素从文档树中删除后，元素与事件处理程序（或 JavaScript对象）之间的绑定关系在内存中并没有一并删除。如果这种情况频繁出现，页面占用的内存数量就会明显增加。因此，在使用 innerHTML、outerHTML 属性和 insertAdjacentHTML() 方法时，最好先手工删除要被替换的元素的所有事件处理程序和 JavaScript 对象属性。
+	</p>
+	<p>
+		在设置 innerHTML 或 outerHTML 时，会创建一个 HTML 解析器。这个解析器是在浏览器级别的代码（通常是 C++ 编写的）基础上运行的，因此比执行 JavaScript 快得多。不可避免地，创建和销毁 HTML 解析器也会带来性能损失，所以最好能够将设置 innerHTML 或 outerHTML 的次数控制在合理的范围内。
+	</p>
+	<code>
+		for (var i = 0, len = values.length; i < len; ++ i) {<br />
+		&nbsp;&emsp;&emsp;ul.innerHTML += "&lt;li&gt;" + values[i] + "&lt;/li&gt;"; //要避免这种频繁操作！<br />
+		}
+	</code>
+	<p>
+		应使用如下方法：
+	</p>
+	<code>
+		var itemsHtml = "";<br />
+		for (var i = 0, len = values.length; i < len; ++ i) {<br />
+		&nbsp;&emsp;&emsp;itemsHtml += "&lt;li&gt;" + values[i] + "&lt;/li&gt;"<br />
+		}<br />
+		ul.innerHTML = itemsHtml;
+	</code>
+	<h3>7. scrollIntoView() 方法</h3>
+	<p>
+		<strong>scrollIntoView()</strong> 可以在所有 HTML 元素上调用，通过滚动浏览器窗口或某个容器元素，调用元素就可以出现在视口中。如果给这个方法传入 true 作为参数，或者不传入任何参数，那么窗口滚动之后会让调用元素的顶部与视口顶部尽可能平齐。如果传入 false 作为参数，调用元素会尽可能全部出现在视口中，（可能的话，调用元素的底部会与视口顶部平齐。）不过顶部不一定平齐。<br />
+		实际上，为某个元素设置焦点也会导致浏览器滚动并显示出获得焦点的元素。 
+	</p>
+	<h2>11.4 专有扩展</h2>
+	<h3>1. children 属性</h3>
+	<p>
+		<strong>children</strong> 属性。这个属性是 HTMLCollection 的实例，只包含元素中同样还是元素的子节点。除此之外，children 属性与 childNodes 没有什么区别，即在元素只包含元素子节点时，这两个属性的值相同。
+	</p>
+	<h3>2. contains() 方法</h3>
+	<p>
+		在实际开发中，经常需要知道某个节点是不是另一个节点的后代。可以使用 <strong>contains()</strong> 方法，调用该方法的是祖先节点，也就是搜索开始的节点，这个方法接收一个参数，即要检测的后代节点。如果被检测的节点是后代节点，该方法返回 true；否则，返回 false。
+	</p>
+	<p>
+		使用 DOM Level 3 <strong>compareDocumentPosition()</strong> 也能够确定节点间的关系。这个方法用于确定两个节点间的关系，返回一个表示该关系的位掩码。下表列出了这个位掩码的值。
+	</p>
+	<table>
+		<tr>
+			<th>掩码</th>
+			<th>节点关系</th>
+		</tr>
+		<tr>
+			<td>1</td>
+			<td>无关（给定的节点不在当前文档中）</td>
+		</tr>
+		<tr>
+			<td>2</td>
+			<td>居前（给定的节点在 DOM 树中参考节点之前）</td>
+		</tr>
+		<tr>
+			<td>4</td>
+			<td>居后（给定的节点在 DOM 树中参考节点之后）</td>
+		</tr>
+		<tr>
+			<td>8</td>
+			<td>包含（给定的节点是参考节点的祖先）</td>
+		</tr>
+		<tr>
+			<td>16</td>
+			<td>被包含（给定的节点是参考节点的后代）</td>
+		</tr>
+	</table>
+	<code>
+		var result = document.documentElement.compareDocumentPosition(document.body);<br />
+		alert(!!(result &amp; 16));
+	</code>
+	<h3>3. 插入文本</h3>
+	<h4>(1) innerText 属性</h4>
+	<p>
+		通过 <strong>innertText</strong> 属性可以操作元素中包含的所有文本内容，包括子文档树中的文本。在通过 innerText 读取值时，它会按照自浅入深的顺序，将子文档树中的所有文本拼接起来。在通过 innerText 写入值时，结果会删除元素的所有子节点，插入包含相应文本值的文本节点。
+	</p>
+	<p>
+		可以通过 innerText 属性过滤掉 HTML 标签。方法是将 innerText 设置为等于 innerText。
+	</p>
+	<code class="inlineCode">div.innerText = div.innerText;</code>
+	<p>
+		<strong>textContent</strong> 是 DOM Level 3 规定的一个属性，它的使用方法和 innerText 相同。
+	</p>
+	<h4>(2) outerText 属性</h4>
+	<p>
+		除了作用范围扩大到了包含调用它的节点之外，<strong>outerText</strong> 与 innerText 基本上没有多大区别。在读取文本值时，outerText 与 innerText 的结果完全一样。但在写模式下，outerText 不只是替换调用它的元素的子节点，而是会替换整个元素（包括子节点）。
+	</p>
+	<p>
+		支持 outerText 属性的浏览器有 IE 4+、Safari 3+、Opera 8+ 和 Chrome。由于这个属性会导致调用它的元素不存在，因此并不常用。建议尽可能不要使用这个属性。
+	</p>
+	<h3>4. 滚动</h3>
+	<ul>
+		<li>
+			scrollIntoViewIfNeeded(<var>alignCenter</var>)：只在当前元素在视口中不可见的情况下，才滚动浏览器窗口或容器元素，最终让它可见。如果当前元素在视口中可见，这个方法什么也不做。如果将可选的 alignCenter 参数设置为 true，则表示尽量将元素显示在视口中部（垂直方向）。Safari 和 Chrome 实现了这个方法。
+		</li>
+		<li>
+			scrollByLines(<var>lineCount</var>)：将元素的内容滚动指定的行高 lineCount 值可以是正值，也可以是负值。Safari 和 Chrome 实现了这个方法。
+		</li>
+		<li>
+			scrollByPages(<var>pageCount</var>)：将元素的内容滚动指定的页面高度，具体高度由元素的高度决定。Safari 和 Chrome 实现了这个方法。 
+		</li>
+	</ul>
+	<p>
+		scrollIntoView() 和 scrollIntoViewIfNeeded() 的作用对象是元素的容器，而 scrollByLines() 和 scrollByPages() 影响的则是元素自身。
+	</p>
+	<p>由于 scrollIntoView() 是唯一一个所有浏览器都支持的方法，因此还是这个方法最常用。</p>
+</body>
+</html>
